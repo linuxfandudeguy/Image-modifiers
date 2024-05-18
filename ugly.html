@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Quality Dropper</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+        }
+
+        #upload {
+            margin-bottom: 20px;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #upload:hover {
+            background-color: #0056b3;
+        }
+
+        canvas {
+            border: 2px solid #333;
+            margin-top: 20px;
+            background-color: #fff;
+        }
+
+        #qualitySlider {
+            width: 300px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <input type="file" id="upload" accept="image/*" value="Upload Image">
+    <canvas id="canvas"></canvas>
+    <input type="range" id="qualitySlider" min="0" max="1" step="0.1" value="1">
+    <label for="qualitySlider">Image Quality</label>
+
+    <script>
+        document.getElementById('upload').addEventListener('change', handleImageUpload);
+
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    drawImage(img);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function drawImage(img) {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+
+            // Set canvas size to match the image
+            canvas.width = img.width;
+            canvas.height = img.height;
+
+            // Draw the original image to the canvas
+            ctx.drawImage(img, 0, 0);
+        }
+
+        document.getElementById('qualitySlider').addEventListener('input', updateImageQuality);
+
+        function updateImageQuality() {
+            const canvas = document.getElementById('canvas');
+            const quality = parseFloat(document.getElementById('qualitySlider').value);
+            const imageData = canvas.toDataURL('image/jpeg', quality);
+            const img = new Image();
+            img.src = imageData;
+
+            // Redraw the image with updated quality
+            img.onload = function() {
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0);
+            };
+        }
+    </script>
+</body>
+</html>
