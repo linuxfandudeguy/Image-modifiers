@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Pixel Displacer</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+        }
+
+        #upload {
+            margin-bottom: 20px;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #upload:hover {
+            background-color: #0056b3;
+        }
+
+        canvas {
+            border: 2px solid #333;
+            margin-top: 20px;
+            background-color: #fff;
+        }
+
+        #downloadButton {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #downloadButton:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <input type="file" id="upload" accept="image/*" value="Upload Image">
+    <canvas id="canvas"></canvas>
+    <button id="downloadButton">Download Image</button>
+
+    <script>
+        document.getElementById('upload').addEventListener('change', handleImageUpload);
+
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    displaceAndDrawImage(img);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function displaceAndDrawImage(img) {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+
+            // Set canvas size to match the image
+            canvas.width = img.width;
+            canvas.height = img.height;
+
+            // Draw the original image to the canvas
+            ctx.drawImage(img, 0, 0);
+
+            // Get image data
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const pixels = imageData.data;
+            const blockSize = 10; // Adjust this value to change the size of blocks
+
+            // Displace pixels within blocks
+            for (let y = 0; y < canvas.height; y += blockSize) {
+                for (let x = 0; x < canvas.width; x += blockSize) {
+                    const offsetX = Math.floor(Math.random() * (2 * blockSize)) - blockSize;
+                    const offsetY = Math.floor(Math.random() * (2 * blockSize)) - blockSize;
+
+                    for (let dy = 0; dy < blockSize; dy++) {
+                        for (let dx = 0; dx < blockSize; dx++) {
+                            const srcX = Math.min(Math.max(x + dx + offsetX, 0), canvas.width - 1);
+                            const srcY = Math.min(Math.max(y + dy + offsetY, 0), canvas.height - 1);
+
+                            const srcIndex = (srcY * canvas.width + srcX) * 4;
+                            const destIndex = ((y + dy) * canvas.width + (x + dx)) * 4;
+
+                            for (let k = 0; k < 4; k++) {
+                                pixels[destIndex + k] = pixels[srcIndex + k];
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Put displaced pixels back to the canvas
+            ctx.putImageData(imageData, 0, 0);
+
+            // Show download button
+            document.getElementById('downloadButton').style.display = 'block';
+            // Set download button click event
+            document.getElementById('downloadButton').addEventListener('click', function() {
+                const downloadLink = document.createElement('a');
+                downloadLink.href = canvas.toDataURL(); // Convert canvas to data URL
+                downloadLink.download = 'modified_image.png'; // Set the filename
+                document.body.appendChild(downloadLink);
+                downloadLink.click(); // Trigger the download
+                document.body.removeChild(downloadLink); // Clean up
+            });
+        }
+    </script>
+</body>
+</html>
