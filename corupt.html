@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Corruptor</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+        }
+
+        #upload {
+            margin-bottom: 20px;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #upload:hover {
+            background-color: #0056b3;
+        }
+
+        canvas {
+            border: 2px solid #333;
+            margin-top: 20px;
+            background-color: #fff;
+        }
+
+        #corruptButton {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #corruptButton:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <input type="file" id="upload" accept="image/*" value="Upload Image">
+    <canvas id="canvas"></canvas>
+    <button id="corruptButton">Corrupt Image</button>
+
+    <script>
+        document.getElementById('upload').addEventListener('change', handleImageUpload);
+
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    drawImage(img);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function drawImage(img) {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+
+            // Set canvas size to match the image
+            canvas.width = img.width;
+            canvas.height = img.height;
+
+            // Draw the original image to the canvas
+            ctx.drawImage(img, 0, 0);
+        }
+
+        document.getElementById('corruptButton').addEventListener('click', corruptImage);
+
+        function corruptImage() {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const pixels = imageData.data;
+
+            // Color distortion: Change pixel colors drastically
+            for (let i = 0; i < pixels.length; i += 4) {
+                if (Math.random() < 0.1) { // Adjust this probability as needed
+                    pixels[i] = Math.floor(Math.random() * 256); // Red channel
+                    pixels[i + 1] = Math.floor(Math.random() * 256); // Green channel
+                    pixels[i + 2] = Math.floor(Math.random() * 256); // Blue channel
+                }
+            }
+
+            // Pixel displacement
+            const blockSize = 10;
+            for (let y = 0; y < canvas.height; y += blockSize) {
+                for (let x = 0; x < canvas.width; x += blockSize) {
+                    const offsetX = Math.floor(Math.random() * (2 * blockSize)) - blockSize;
+                    const offsetY = Math.floor(Math.random() * (2 * blockSize)) - blockSize;
+
+                    for (let dy = 0; dy < blockSize; dy++) {
+                        for (let dx = 0; dx < blockSize; dx++) {
+                            const srcX = Math.min(Math.max(x + dx + offsetX, 0), canvas.width - 1);
+                            const srcY = Math.min(Math.max(y + dy + offsetY, 0), canvas.height - 1);
+
+                            const srcIndex = (srcY * canvas.width + srcX) * 4;
+                            const destIndex = ((y + dy) * canvas.width + (x + dx)) * 4;
+
+                            for (let k = 0; k < 4; k++) {
+                                pixels[destIndex + k] = pixels[srcIndex + k];
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Scramble 50% of the pixels
+            const totalPixels = canvas.width * canvas.height;
+            const scrambleCount = Math.floor(totalPixels * 0.5);
+            for (let i = 0; i < scrambleCount; i++) {
+                const index1 = Math.floor(Math.random() * totalPixels) * 4;
+                const index2 = Math.floor(Math.random() * totalPixels) * 4;
+                for (let k = 0; k < 4; k++) {
+                    const temp = pixels[index1 + k];
+                    pixels[index1 + k] = pixels[index2 + k];
+                    pixels[index2 + k] = temp;
+                }
+            }
+
+            // Put corrupted pixels back to the canvas
+            ctx.putImageData(imageData, 0, 0);
+        }
+    </script>
+</body>
+</html>
